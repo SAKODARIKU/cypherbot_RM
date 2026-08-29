@@ -1,0 +1,28 @@
+name: RM定例のSlack自動投稿
+
+on:
+  schedule:
+    # 毎週 月曜(1)・木曜(4) の 13:00 JST (= 04:00 UTC) に投稿します
+    # 21:00開始の定例会よりだいぶ前倒しで、事前に議事録へアジェンダを書き込む時間を確保しています。
+    #
+    # 変更したい場合はここを書き換えてください。cronはUTC(協定世界時)基準なので、
+    # 「JSTの時刻 - 9時間」がUTCの時刻になります。
+    #     書式: 分 時 * * 曜日(0=日,1=月,2=火,3=水,4=木,5=金,6=土。カンマ区切りで複数指定可)
+    - cron: '0 4 * * 1,4'
+  workflow_dispatch: {} # Actionsタブから手動実行してテストできるようにしておく
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: node post-rm-message.js
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          RM_CHANNEL_ID: ${{ secrets.RM_CHANNEL_ID }}
+          MINUTES_URL: ${{ secrets.MINUTES_URL }}
+          MEET_URL: ${{ secrets.MEET_URL }}

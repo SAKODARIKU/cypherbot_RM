@@ -1,0 +1,13 @@
+{
+  "name": "rm-slack-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "RM定例の議事録リンク・Meetリンクを、決まった曜日・時刻にSlackへ自動投稿するボット",
+  "scripts": {
+    "start": "node post-rm-message.js"
+  },
+  "dependencies": {
+    "@slack/web-api": "^7.3.4"
+  }
+}
