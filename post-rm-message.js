@@ -100,7 +100,7 @@ function parseCsv(text) {
   return rows.filter((r) => r.some((c) => c.trim() !== ''));
 }
 
-function parseDateCell(raw) {
+function parseDateCell(raw, fallbackYear) {
   if (!raw) return null;
   const s = raw.trim();
 
@@ -116,6 +116,14 @@ function parseDateCell(raw) {
     return `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
   }
 
+  // M/D や M月D日 のように年が省略されている場合は、実行時点のJSTの年を補って解釈する
+  // (当番表が年をまたぐ場合だけは、年を明記した行を混ぜてもらえれば優先されます)
+  m = s.match(/^(\d{1,2})[/\-](\d{1,2})$/);
+  if (!m) m = s.match(/^(\d{1,2})月(\d{1,2})日$/);
+  if (m && fallbackYear) {
+    return `${fallbackYear}-${String(m[1]).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}`;
+  }
+
   return null;
 }
 
@@ -123,6 +131,8 @@ async function fetchTodaysAssignment(todayYmd) {
   if (!SCHEDULE_CSV_URL) {
     return { found: false, reason: 'no-url' };
   }
+
+  const fallbackYear = todayYmd.slice(0, 4);
 
   try {
     const res = await fetch(SCHEDULE_CSV_URL);
@@ -148,7 +158,7 @@ async function fetchTodaysAssignment(todayYmd) {
 
     for (let i = 1; i < rows.length; i++) {
       const cells = rows[i];
-      const ymd = parseDateCell(cells[idx.date]);
+      const ymd = parseDateCell(cells[idx.date], fallbackYear);
       if (ymd === todayYmd) {
         return {
           found: true,
