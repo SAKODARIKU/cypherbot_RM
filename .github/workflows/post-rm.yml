@@ -26,3 +26,4 @@ jobs:
           RM_CHANNEL_ID: ${{ secrets.RM_CHANNEL_ID }}
           MINUTES_URL: ${{ secrets.MINUTES_URL }}
           MEET_URL: ${{ secrets.MEET_URL }}
+          SCHEDULE_CSV_URL: ${{ secrets.SCHEDULE_CSV_URL }}
