@@ -31,30 +31,34 @@ if (!MINUTES_URL || !MEET_URL) {
 }
 
 // ---- 日付ユーティリティ(JST基準) ----
-function getJstNow() {
-  const jstString = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' });
-  return new Date(jstString);
-}
+// 注意: Date同士のタイムゾーン変換を2回重ねるとズレるバグを踏んだことがあるため、
+// 「今の瞬間」から直接Intl.DateTimeFormatでJSTの年月日を1回だけ取り出す方式にしている。
+const JST_WEEKDAY_JA = { Mon: '月', Tue: '火', Wed: '水', Thu: '木', Fri: '金', Sat: '土', Sun: '日' };
 
-function toYmd(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-function formatJstDateLabel(date) {
-  return new Intl.DateTimeFormat('ja-JP', {
+function getJstDateParts(date = new Date()) {
+  const fmt = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Tokyo',
     year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     weekday: 'short',
-  }).format(date);
+    hour12: false,
+  });
+  return Object.fromEntries(fmt.formatToParts(date).map((p) => [p.type, p.value]));
+}
+
+function toYmd(parts) {
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function formatJstDateLabel(parts) {
+  const weekday = JST_WEEKDAY_JA[parts.weekday] || parts.weekday;
+  return `${parts.year}年${Number(parts.month)}月${Number(parts.day)}日(${weekday})`;
 }
 
 // ---- 当番表(Googleスプレッドシートを「ウェブに公開」したCSV)を取得 ----
 function parseCsv(text) {
+  // ダブルクォート対応の簡易CSVパーサ(コメント欄にカンマが入っていても壊れないように)
   const rows = [];
   let row = [];
   let field = '';
@@ -100,11 +104,13 @@ function parseDateCell(raw) {
   if (!raw) return null;
   const s = raw.trim();
 
+  // YYYY-MM-DD / YYYY/MM/DD
   let m = s.match(/^(\d{4})[/\-](\d{1,2})[/\-](\d{1,2})/);
   if (m) {
     return `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
   }
 
+  // YYYY年M月D日
   m = s.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日/);
   if (m) {
     return `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
@@ -187,9 +193,9 @@ function resolveMention(name, members) {
 
 // ---- メイン処理 ----
 async function main() {
-  const jstNow = getJstNow();
-  const todayYmd = toYmd(jstNow);
-  const dateLabel = formatJstDateLabel(jstNow);
+  const jstParts = getJstDateParts();
+  const todayYmd = toYmd(jstParts);
+  const dateLabel = formatJstDateLabel(jstParts);
   const label = MEETING_LABEL || '定例会';
   const timeRange = MEETING_TIME_RANGE || '21:00-21:30';
 
