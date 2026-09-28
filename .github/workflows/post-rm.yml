@@ -10,7 +10,12 @@ on:
     # 「JSTの時刻 - 9時間」がUTCの時刻になります。
     #     書式: 分 時 * * 曜日(0=日,1=月,2=火,3=水,4=木,5=金,6=土。カンマ区切りで複数指定可)
     - cron: '7 4 * * 1,4'
-  workflow_dispatch: {} # Actionsタブから手動実行してテストできるようにしておく
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'dry run(チェックすると実際には投稿せず、内容だけログに出す)'
+        type: boolean
+        default: false
 
 jobs:
   post:
@@ -28,3 +33,4 @@ jobs:
           MINUTES_URL: ${{ secrets.MINUTES_URL }}
           MEET_URL: ${{ secrets.MEET_URL }}
           SCHEDULE_CSV_URL: ${{ secrets.SCHEDULE_CSV_URL }}
+          DRY_RUN: ${{ inputs.dry_run }}
